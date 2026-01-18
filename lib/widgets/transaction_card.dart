@@ -43,6 +43,33 @@ class TransactionCard extends StatelessWidget {
         ),
         child: Icon(Icons.delete, color: Colors.red.shade900, size: 28),
       ),
+      confirmDismiss: (direction) async {
+        return await showDialog<bool>(
+          context: context,
+          builder: (BuildContext context) {
+            return AlertDialog(
+              title: const Text('ยืนยันการลบ'),
+              content: Text('คุณต้องการลบรายการ "${transaction.title}" ใช่หรือไม่?'),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(16),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(false),
+                  child: const Text('ยกเลิก'),
+                ),
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(true),
+                  style: TextButton.styleFrom(
+                    foregroundColor: Colors.red,
+                  ),
+                  child: const Text('ลบ'),
+                ),
+              ],
+            );
+          },
+        ) ?? false;
+      },
       onDismissed: (_) {
         onDelete?.call();
       },
