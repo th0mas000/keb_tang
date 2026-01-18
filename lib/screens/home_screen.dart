@@ -6,6 +6,7 @@ import '../widgets/transaction_card.dart';
 import 'add_transaction_screen.dart';
 import 'transactions_list_screen.dart';
 import 'bill_scan_screen.dart';
+import 'statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -122,6 +123,18 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('เก็บตังค์'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.bar_chart),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsScreen(),
+                ),
+              );
+            },
+            tooltip: 'สถิติ',
+          ),
           IconButton(
             icon: const Icon(Icons.document_scanner),
             onPressed: _scanBill,

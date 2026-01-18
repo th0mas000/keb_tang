@@ -88,6 +88,19 @@ class DatabaseHelper {
     return result.map((json) => models.Transaction.fromMap(json)).toList();
   }
 
+  // Read transactions by date range
+  Future<List<models.Transaction>> getTransactionsByDateRange(
+      DateTime startDate, DateTime endDate) async {
+    final db = await database;
+    final result = await db.query(
+      'transactions',
+      where: 'date >= ? AND date <= ?',
+      whereArgs: [startDate.toIso8601String(), endDate.toIso8601String()],
+      orderBy: 'date ASC',
+    );
+    return result.map((json) => models.Transaction.fromMap(json)).toList();
+  }
+
   // Update a transaction
   Future<int> updateTransaction(models.Transaction transaction) async {
     final db = await database;
