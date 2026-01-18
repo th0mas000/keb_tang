@@ -6,6 +6,7 @@ import '../services/receipt_parser.dart';
 import 'add_transaction_screen.dart';
 import '../models/transaction_type.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/responsive_container.dart';
 
 class BillScanScreen extends StatefulWidget {
   const BillScanScreen({super.key});
@@ -224,57 +225,59 @@ class _BillScanScreenState extends State<BillScanScreen> {
   }
 
   Widget _buildImagePreview() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Image preview
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.file(
-              _selectedImage!,
-              width: double.infinity,
-              fit: BoxFit.cover,
+    return ResponsiveContainer(
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Image preview
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.file(
+                _selectedImage!,
+                width: double.infinity,
+                fit: BoxFit.cover,
+              ),
             ),
-          ),
-          const SizedBox(height: 24),
-
-          // Processing indicator or results
-          if (_isProcessing)
-            const Center(
-              child: Column(
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text('กำลังประมวลผลรูปภาพ...'),
-                ],
-              ),
-            )
-          else if (_errorMessage != null)
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.red[50],
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.red[300]!),
-              ),
-              child: Row(
-                children: [
-                  Icon(Icons.error, color: Colors.red[700]),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      _errorMessage!,
-                      style: TextStyle(color: Colors.red[700]),
+            const SizedBox(height: 24),
+  
+            // Processing indicator or results
+            if (_isProcessing)
+              const Center(
+                child: Column(
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('กำลังประมวลผลรูปภาพ...'),
+                  ],
+                ),
+              )
+            else if (_errorMessage != null)
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.red[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.red[300]!),
+                ),
+                child: Row(
+                  children: [
+                    Icon(Icons.error, color: Colors.red[700]),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Text(
+                        _errorMessage!,
+                        style: TextStyle(color: Colors.red[700]),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )
-          else if (_parsedData != null)
-            _buildExtractedData(),
-        ],
+                  ],
+                ),
+              )
+            else if (_parsedData != null)
+              _buildExtractedData(),
+          ],
+        ),
       ),
     );
   }

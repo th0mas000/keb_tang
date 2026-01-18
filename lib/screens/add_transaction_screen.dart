@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
 import '../database/database_helper.dart';
+import '../widgets/responsive_container.dart';
 
 class AddTransactionScreen extends StatefulWidget {
   final Transaction? transaction; // For editing existing transaction
@@ -147,149 +148,151 @@ class _AddTransactionScreenState extends State<AddTransactionScreen> {
       ),
       body: Form(
         key: _formKey,
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Type selector
-              const Text(
-                'ประเภท',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 8),
-              SegmentedButton<TransactionType>(
-                segments: const [
-                  ButtonSegment(
-                    value: TransactionType.income,
-                    label: Text('รายรับ'),
-                    icon: Icon(Icons.arrow_upward),
-                  ),
-                  ButtonSegment(
-                    value: TransactionType.expense,
-                    label: Text('รายจ่าย'),
-                    icon: Icon(Icons.arrow_downward),
-                  ),
-                ],
-                selected: {_selectedType},
-                onSelectionChanged: (Set<TransactionType> newSelection) {
-                  setState(() {
-                    _selectedType = newSelection.first;
-                    // Reset category when type changes
-                    _selectedCategory = _currentCategories.first;
-                  });
-                },
-              ),
-              const SizedBox(height: 24),
-
-              // Title field
-              TextFormField(
-                controller: _titleController,
-                decoration: const InputDecoration(
-                  labelText: 'หัวข้อ',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.title),
+        child: ResponsiveContainer(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Type selector
+                const Text(
+                  'ประเภท',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 ),
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'กรุณากรอกหัวข้อ';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Amount field
-              TextFormField(
-                controller: _amountController,
-                decoration: const InputDecoration(
-                  labelText: 'จำนวนเงิน',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.attach_money),
+                const SizedBox(height: 8),
+                SegmentedButton<TransactionType>(
+                  segments: const [
+                    ButtonSegment(
+                      value: TransactionType.income,
+                      label: Text('รายรับ'),
+                      icon: Icon(Icons.arrow_upward),
+                    ),
+                    ButtonSegment(
+                      value: TransactionType.expense,
+                      label: Text('รายจ่าย'),
+                      icon: Icon(Icons.arrow_downward),
+                    ),
+                  ],
+                  selected: {_selectedType},
+                  onSelectionChanged: (Set<TransactionType> newSelection) {
+                    setState(() {
+                      _selectedType = newSelection.first;
+                      // Reset category when type changes
+                      _selectedCategory = _currentCategories.first;
+                    });
+                  },
                 ),
-                keyboardType: TextInputType.number,
-                validator: (value) {
-                  if (value == null || value.isEmpty) {
-                    return 'กรุณากรอกจำนวนเงิน';
-                  }
-                  if (double.tryParse(value) == null) {
-                    return 'กรุณากรอกตัวเลขที่ถูกต้อง';
-                  }
-                  if (double.parse(value) <= 0) {
-                    return 'จำนวนเงินต้องมากกว่า 0';
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Category dropdown
-              DropdownButtonFormField<String>(
-                value: _selectedCategory,
-                decoration: const InputDecoration(
-                  labelText: 'หมวดหมู่',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.category),
-                ),
-                items: _currentCategories
-                    .map((category) => DropdownMenuItem(
-                          value: category,
-                          child: Text(category),
-                        ))
-                    .toList(),
-                onChanged: (value) {
-                  setState(() {
-                    _selectedCategory = value!;
-                  });
-                },
-              ),
-              const SizedBox(height: 16),
-
-              // Date picker
-              InkWell(
-                onTap: () => _selectDate(context),
-                child: InputDecorator(
+                const SizedBox(height: 24),
+  
+                // Title field
+                TextFormField(
+                  controller: _titleController,
                   decoration: const InputDecoration(
-                    labelText: 'วันที่',
+                    labelText: 'หัวข้อ',
                     border: OutlineInputBorder(),
-                    prefixIcon: Icon(Icons.calendar_today),
+                    prefixIcon: Icon(Icons.title),
                   ),
-                  child: Text(dateFormat.format(_selectedDate)),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'กรุณากรอกหัวข้อ';
+                    }
+                    return null;
+                  },
                 ),
-              ),
-              const SizedBox(height: 16),
-
-              // Description field
-              TextFormField(
-                controller: _descriptionController,
-                decoration: const InputDecoration(
-                  labelText: 'รายละเอียด (ไม่บังคับ)',
-                  border: OutlineInputBorder(),
-                  prefixIcon: Icon(Icons.notes),
-                ),
-                maxLines: 3,
-              ),
-              const SizedBox(height: 24),
-
-              // Save button
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: _saveTransaction,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: _selectedType == TransactionType.income
-                        ? Colors.green
-                        : Colors.red,
-                    foregroundColor: Colors.white,
+                const SizedBox(height: 16),
+  
+                // Amount field
+                TextFormField(
+                  controller: _amountController,
+                  decoration: const InputDecoration(
+                    labelText: 'จำนวนเงิน',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.attach_money),
                   ),
-                  child: Text(
-                    isEditing ? 'อัปเดตรายการ' : 'เพิ่มรายการ',
-                    style: const TextStyle(fontSize: 16),
+                  keyboardType: TextInputType.number,
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return 'กรุณากรอกจำนวนเงิน';
+                    }
+                    if (double.tryParse(value) == null) {
+                      return 'กรุณากรอกตัวเลขที่ถูกต้อง';
+                    }
+                    if (double.parse(value) <= 0) {
+                      return 'จำนวนเงินต้องมากกว่า 0';
+                    }
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 16),
+  
+                // Category dropdown
+                DropdownButtonFormField<String>(
+                  value: _selectedCategory,
+                  decoration: const InputDecoration(
+                    labelText: 'หมวดหมู่',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.category),
+                  ),
+                  items: _currentCategories
+                      .map((category) => DropdownMenuItem(
+                            value: category,
+                            child: Text(category),
+                          ))
+                      .toList(),
+                  onChanged: (value) {
+                    setState(() {
+                      _selectedCategory = value!;
+                    });
+                  },
+                ),
+                const SizedBox(height: 16),
+  
+                // Date picker
+                InkWell(
+                  onTap: () => _selectDate(context),
+                  child: InputDecorator(
+                    decoration: const InputDecoration(
+                      labelText: 'วันที่',
+                      border: OutlineInputBorder(),
+                      prefixIcon: Icon(Icons.calendar_today),
+                    ),
+                    child: Text(dateFormat.format(_selectedDate)),
                   ),
                 ),
-              ),
-            ],
+                const SizedBox(height: 16),
+  
+                // Description field
+                TextFormField(
+                  controller: _descriptionController,
+                  decoration: const InputDecoration(
+                    labelText: 'รายละเอียด (ไม่บังคับ)',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.notes),
+                  ),
+                  maxLines: 3,
+                ),
+                const SizedBox(height: 24),
+  
+                // Save button
+                SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: ElevatedButton(
+                    onPressed: _saveTransaction,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: _selectedType == TransactionType.income
+                          ? Colors.green
+                          : Colors.red,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(
+                      isEditing ? 'อัปเดตรายการ' : 'เพิ่มรายการ',
+                      style: const TextStyle(fontSize: 16),
+                    ),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

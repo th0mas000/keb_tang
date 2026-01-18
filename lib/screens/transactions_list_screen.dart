@@ -6,6 +6,7 @@ import '../database/database_helper.dart';
 import '../widgets/transaction_card.dart';
 import '../utils/currency_formatter.dart';
 import 'add_transaction_screen.dart';
+import '../widgets/responsive_container.dart';
 
 class TransactionsListScreen extends StatefulWidget {
   const TransactionsListScreen({super.key});
@@ -198,71 +199,73 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                 )
               : RefreshIndicator(
                   onRefresh: _loadTransactions,
-                  child: ListView.builder(
-                    padding: const EdgeInsets.only(bottom: 24),
-                    itemCount: sortedKeys.length,
-                    itemBuilder: (context, index) {
-                      final dateKey = sortedKeys[index];
-                      final dailyTransactions = _groupedTransactions[dateKey]!;
-                      final totals = _dailyTotals[dateKey]!;
-                      
-                      return Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // Date Header
-                          Padding(
-                            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  _formatDateHeader(dateKey),
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
+                  child: ResponsiveContainer(
+                    child: ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 24),
+                      itemCount: sortedKeys.length,
+                      itemBuilder: (context, index) {
+                        final dateKey = sortedKeys[index];
+                        final dailyTransactions = _groupedTransactions[dateKey]!;
+                        final totals = _dailyTotals[dateKey]!;
+                        
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Date Header
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                children: [
+                                  Text(
+                                    _formatDateHeader(dateKey),
+                                    style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.black87,
+                                    ),
                                   ),
-                                ),
-                                Row(
-                                  children: [
-                                    if (totals['income']! > 0)
-                                      Text(
-                                        '+${CurrencyFormatter.formatTHB(totals['income']!)}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.green,
+                                  Row(
+                                    children: [
+                                      if (totals['income']! > 0)
+                                        Text(
+                                          '+${CurrencyFormatter.formatTHB(totals['income']!)}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.green,
+                                          ),
                                         ),
-                                      ),
-                                    if (totals['income']! > 0 && totals['expense']! > 0)
-                                      const SizedBox(width: 8),
-                                    if (totals['expense']! > 0)
-                                      Text(
-                                        '-${CurrencyFormatter.formatTHB(totals['expense']!)}',
-                                        style: const TextStyle(
-                                          fontSize: 13,
-                                          fontWeight: FontWeight.w600,
-                                          color: Colors.red,
+                                      if (totals['income']! > 0 && totals['expense']! > 0)
+                                        const SizedBox(width: 8),
+                                      if (totals['expense']! > 0)
+                                        Text(
+                                          '-${CurrencyFormatter.formatTHB(totals['expense']!)}',
+                                          style: const TextStyle(
+                                            fontSize: 13,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.red,
+                                          ),
                                         ),
-                                      ),
-                                  ],
-                                ),
-                              ],
+                                    ],
+                                  ),
+                                ],
+                              ),
                             ),
-                          ),
-                          
-                          // Transactions
-                          ...dailyTransactions.map((transaction) {
-                            return TransactionCard(
-                              transaction: transaction,
-                              showDate: false, // Already grouped by date
-                              onTap: () => _editTransaction(transaction),
-                              onDelete: () => _deleteTransaction(transaction.id!),
-                            );
-                          }),
-                        ],
-                      );
-                    },
+                            
+                            // Transactions
+                            ...dailyTransactions.map((transaction) {
+                              return TransactionCard(
+                                transaction: transaction,
+                                showDate: false, // Already grouped by date
+                                onTap: () => _editTransaction(transaction),
+                                onDelete: () => _deleteTransaction(transaction.id!),
+                              );
+                            }),
+                          ],
+                        );
+                      },
+                    ),
                   ),
                 ),
     );

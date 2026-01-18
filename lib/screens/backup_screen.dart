@@ -3,6 +3,7 @@ import 'package:file_picker/file_picker.dart';
 import 'dart:convert';
 import 'dart:io';
 import '../services/export_import_service.dart';
+import '../widgets/responsive_container.dart';
 
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key});
@@ -145,61 +146,63 @@ class _BackupScreenState extends State<BackupScreen> {
       ),
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
-          : SingleChildScrollView(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                   _buildSectionTitle('จัดการข้อมูล'),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          _buildActionButton(
-                            icon: Icons.save_alt,
-                            label: 'บันทึกไฟล์ลงเครื่อง',
-                            subtitle: 'บันทึกข้อมูลเป็นไฟล์ JSON',
-                            color: Colors.blue,
-                            onPressed: _exportToLocal,
-                          ),
-                          const SizedBox(height: 12),
-                          _buildActionButton(
-                            icon: Icons.file_open,
-                            label: 'นำเข้าข้อมูล',
-                            subtitle: 'กู้คืนข้อมูลจากไฟล์',
-                            color: Colors.green,
-                            onPressed: _importFromLocal,
-                          ),
-                        ],
+          : ResponsiveContainer(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                     _buildSectionTitle('จัดการข้อมูล'),
+                    const SizedBox(height: 12),
+                    Card(
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Column(
+                          children: [
+                            _buildActionButton(
+                              icon: Icons.save_alt,
+                              label: 'บันทึกไฟล์ลงเครื่อง',
+                              subtitle: 'บันทึกข้อมูลเป็นไฟล์ JSON',
+                              color: Colors.blue,
+                              onPressed: _exportToLocal,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildActionButton(
+                              icon: Icons.file_open,
+                              label: 'นำเข้าข้อมูล',
+                              subtitle: 'กู้คืนข้อมูลจากไฟล์',
+                              color: Colors.green,
+                              onPressed: _importFromLocal,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                  const SizedBox(height: 32),
-                  // Info Card
-                  Card(
-                    color: Colors.blue.shade50,
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Icon(Icons.info_outline, color: Colors.blue.shade700),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Text(
-                              'แนะนำให้สำรองข้อมูลเป็นประจำเพื่อป้องกันข้อมูลสูญหาย',
-                              style: TextStyle(
-                                color: Colors.blue.shade700,
-                                fontSize: 13,
+                    const SizedBox(height: 32),
+                    // Info Card
+                    Card(
+                      color: Colors.blue.shade50,
+                      child: Padding(
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            Icon(Icons.info_outline, color: Colors.blue.shade700),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                'แนะนำให้สำรองข้อมูลเป็นประจำเพื่อป้องกันข้อมูลสูญหาย',
+                                style: TextStyle(
+                                  color: Colors.blue.shade700,
+                                  fontSize: 13,
+                                ),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
     );

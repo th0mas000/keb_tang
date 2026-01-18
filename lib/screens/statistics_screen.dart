@@ -8,6 +8,7 @@ import '../widgets/period_chart.dart';
 import '../widgets/income_pie_chart.dart';
 import '../widgets/category_pie_chart.dart';
 import '../utils/currency_formatter.dart';
+import '../widgets/responsive_container.dart';
 
 class StatisticsScreen extends StatelessWidget {
   const StatisticsScreen({super.key});
@@ -116,17 +117,19 @@ class _DailyChartViewState extends State<DailyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          _buildDateSelector(),
-          if (_summary != null) _buildSummaryCards(),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : PeriodChart(data: _chartData, period: 'daily'),
-          ),
-        ],
+      body: ResponsiveContainer(
+        child: Column(
+          children: [
+            _buildDateSelector(),
+            if (_summary != null) _buildSummaryCards(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : PeriodChart(data: _chartData, period: 'daily'),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCategoryBreakdown,
@@ -291,51 +294,53 @@ class _WeeklyChartViewState extends State<WeeklyChartView> {
     final weekEnd = _selectedWeekStart.add(const Duration(days: 6));
     
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
-                    });
-                    _loadData();
-                  },
-                ),
-                Text(
-                  '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+      body: ResponsiveContainer(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      setState(() {
+                        _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
+                      });
+                      _loadData();
+                    },
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: weekEnd.isBefore(DateTime.now())
-                      ? () {
-                          setState(() {
-                            _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
-                          });
-                          _loadData();
-                        }
-                      : null,
-                ),
-              ],
+                  Text(
+                    '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: weekEnd.isBefore(DateTime.now())
+                        ? () {
+                            setState(() {
+                              _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
+                            });
+                            _loadData();
+                          }
+                        : null,
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (_summary != null) _buildSummaryCards(),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : PeriodChart(data: _chartData, period: 'weekly'),
-          ),
-        ],
+            if (_summary != null) _buildSummaryCards(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : PeriodChart(data: _chartData, period: 'weekly'),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCategoryBreakdown,
@@ -440,58 +445,60 @@ class _MonthlyChartViewState extends State<MonthlyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      _selectedMonth = DateTime(
-                        _selectedMonth.year,
-                        _selectedMonth.month - 1,
-                      );
-                    });
-                    _loadData();
-                  },
-                ),
-                Text(
-                  DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+      body: ResponsiveContainer(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month - 1,
+                        );
+                      });
+                      _loadData();
+                    },
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
-                          .isBefore(DateTime.now())
-                      ? () {
-                          setState(() {
-                            _selectedMonth = DateTime(
-                              _selectedMonth.year,
-                              _selectedMonth.month + 1,
-                            );
-                          });
-                          _loadData();
-                        }
-                      : null,
-                ),
-              ],
+                  Text(
+                    DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
+                            .isBefore(DateTime.now())
+                        ? () {
+                            setState(() {
+                              _selectedMonth = DateTime(
+                                _selectedMonth.year,
+                                _selectedMonth.month + 1,
+                              );
+                            });
+                            _loadData();
+                          }
+                        : null,
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (_summary != null) _buildSummaryCards(),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : PeriodChart(data: _chartData, period: 'monthly'),
-          ),
-        ],
+            if (_summary != null) _buildSummaryCards(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : PeriodChart(data: _chartData, period: 'monthly'),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCategoryBreakdown,
@@ -596,51 +603,53 @@ class _YearlyChartViewState extends State<YearlyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: Column(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(16),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                IconButton(
-                  icon: const Icon(Icons.chevron_left),
-                  onPressed: () {
-                    setState(() {
-                      _selectedYear--;
-                    });
-                    _loadData();
-                  },
-                ),
-                Text(
-                  _selectedYear.toString(),
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w500,
+      body: ResponsiveContainer(
+        child: Column(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(16),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.chevron_left),
+                    onPressed: () {
+                      setState(() {
+                        _selectedYear--;
+                      });
+                      _loadData();
+                    },
                   ),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.chevron_right),
-                  onPressed: _selectedYear < DateTime.now().year
-                      ? () {
-                          setState(() {
-                            _selectedYear++;
-                          });
-                          _loadData();
-                        }
-                      : null,
-                ),
-              ],
+                  Text(
+                    _selectedYear.toString(),
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.chevron_right),
+                    onPressed: _selectedYear < DateTime.now().year
+                        ? () {
+                            setState(() {
+                              _selectedYear++;
+                            });
+                            _loadData();
+                          }
+                        : null,
+                  ),
+                ],
+              ),
             ),
-          ),
-          if (_summary != null) _buildSummaryCards(),
-          const SizedBox(height: 16),
-          Expanded(
-            child: _isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : PeriodChart(data: _chartData, period: 'yearly'),
-          ),
-        ],
+            if (_summary != null) _buildSummaryCards(),
+            const SizedBox(height: 16),
+            Expanded(
+              child: _isLoading
+                  ? const Center(child: CircularProgressIndicator())
+                  : PeriodChart(data: _chartData, period: 'yearly'),
+            ),
+          ],
+        ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showCategoryBreakdown,

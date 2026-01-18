@@ -8,6 +8,7 @@ import 'transactions_list_screen.dart';
 import 'bill_scan_screen.dart';
 import 'statistics_screen.dart';
 import 'backup_screen.dart';
+import '../widgets/responsive_container.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -159,107 +160,109 @@ class _HomeScreenState extends State<HomeScreen> {
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _loadData,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Summary cards
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SummaryCard(
-                            title: 'รายรับ',
-                            amount: _totalIncome,
-                            icon: Icons.arrow_upward,
-                            color: Colors.green,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: SummaryCard(
-                            title: 'รายจ่าย',
-                            amount: _totalExpenses,
-                            icon: Icons.arrow_downward,
-                            color: Colors.red,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    SummaryCard(
-                      title: 'ยอดคงเหลือ',
-                      amount: _balance,
-                      icon: Icons.account_balance_wallet,
-                      color: _balance >= 0 ? Colors.blue : Colors.orange,
-                    ),
-                    const SizedBox(height: 32),
-
-                    // Recent transactions header
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'รายการล่าสุด',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        if (_recentTransactions.isNotEmpty)
-                          TextButton(
-                            onPressed: _viewAllTransactions,
-                            child: const Text('ดูทั้งหมด'),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-
-                    // Recent transactions list
-                    _recentTransactions.isEmpty
-                        ? Center(
-                            child: Padding(
-                              padding: const EdgeInsets.all(32),
-                              child: Column(
-                                children: [
-                                  Icon(
-                                    Icons.inbox,
-                                    size: 64,
-                                    color: Colors.grey[400],
-                                  ),
-                                  const SizedBox(height: 16),
-                                  Text(
-                                    'ยังไม่มีรายการ',
-                                    style: TextStyle(
-                                      fontSize: 18,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                                  const SizedBox(height: 8),
-                                  Text(
-                                    'แตะปุ่ม + เพื่อเพิ่มรายการแรกของคุณ',
-                                    style: TextStyle(
-                                      fontSize: 14,
-                                      color: Colors.grey[500],
-                                    ),
-                                    textAlign: TextAlign.center,
-                                  ),
-                                ],
-                              ),
+              child: ResponsiveContainer(
+                child: SingleChildScrollView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Summary cards
+                      Row(
+                        children: [
+                          Expanded(
+                            child: SummaryCard(
+                              title: 'รายรับ',
+                              amount: _totalIncome,
+                              icon: Icons.arrow_upward,
+                              color: Colors.green,
                             ),
-                          )
-                        : Column(
-                            children: _recentTransactions.map((transaction) {
-                              return TransactionCard(
-                                transaction: transaction,
-                                onTap: () => _editTransaction(transaction),
-                                onDelete: () =>
-                                    _deleteTransaction(transaction.id!),
-                              );
-                            }).toList(),
                           ),
-                  ],
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SummaryCard(
+                              title: 'รายจ่าย',
+                              amount: _totalExpenses,
+                              icon: Icons.arrow_downward,
+                              color: Colors.red,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      SummaryCard(
+                        title: 'ยอดคงเหลือ',
+                        amount: _balance,
+                        icon: Icons.account_balance_wallet,
+                        color: _balance >= 0 ? Colors.blue : Colors.orange,
+                      ),
+                      const SizedBox(height: 32),
+  
+                      // Recent transactions header
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            'รายการล่าสุด',
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (_recentTransactions.isNotEmpty)
+                            TextButton(
+                              onPressed: _viewAllTransactions,
+                              child: const Text('ดูทั้งหมด'),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+  
+                      // Recent transactions list
+                      _recentTransactions.isEmpty
+                          ? Center(
+                              child: Padding(
+                                padding: const EdgeInsets.all(32),
+                                child: Column(
+                                  children: [
+                                    Icon(
+                                      Icons.inbox,
+                                      size: 64,
+                                      color: Colors.grey[400],
+                                    ),
+                                    const SizedBox(height: 16),
+                                    Text(
+                                      'ยังไม่มีรายการ',
+                                      style: TextStyle(
+                                        fontSize: 18,
+                                        color: Colors.grey[600],
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      'แตะปุ่ม + เพื่อเพิ่มรายการแรกของคุณ',
+                                      style: TextStyle(
+                                        fontSize: 14,
+                                        color: Colors.grey[500],
+                                      ),
+                                      textAlign: TextAlign.center,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            )
+                          : Column(
+                              children: _recentTransactions.map((transaction) {
+                                return TransactionCard(
+                                  transaction: transaction,
+                                  onTap: () => _editTransaction(transaction),
+                                  onDelete: () =>
+                                      _deleteTransaction(transaction.id!),
+                                );
+                              }).toList(),
+                            ),
+                    ],
+                  ),
                 ),
               ),
             ),
