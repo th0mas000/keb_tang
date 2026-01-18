@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'dart:convert';
+import 'package:share_plus/share_plus.dart';
 import 'dart:io';
+import 'dart:convert';
+import 'dart:typed_data';
 import '../services/export_import_service.dart';
 import '../widgets/responsive_container.dart';
 
@@ -16,6 +18,36 @@ class _BackupScreenState extends State<BackupScreen> {
   final ExportImportService _exportImportService = ExportImportService();
   bool _isLoading = false;
 
+  Future<void> _exportBackup() async {
+    try {
+      setState(() => _isLoading = true);
+      
+      // Get shareable file path
+      final filePath = await _exportImportService.getShareableFilePath();
+      
+      // Share file - this opens the system share sheet where users can:
+      // 1. Save to Files (Local)
+      // 2. Save to Google Drive
+      // 3. Send via Email/Line/etc.
+      final result = await Share.shareXFiles(
+        [XFile(filePath, mimeType: 'application/json')],
+        subject: 'Keb Tang Backup',
+        text: 'Backup file for Keb Tang app',
+      );
+
+      // Share.shareXFiles returns void or status depending on version/platform,
+      // generally we assume success if no error thrown, though user might dismiss sheet.
+      
+      setState(() => _isLoading = false);
+      
+      // Note: We don't show "Success" snackbar here because we don't know for sure 
+      // if the user actually completed the share/save action in the external app.
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showError('ไม่สามารถส่งออกไฟล์: $e');
+    }
+  }
+
   Future<void> _exportToLocal() async {
     try {
       setState(() => _isLoading = true);
@@ -23,33 +55,51 @@ class _BackupScreenState extends State<BackupScreen> {
       // Get JSON data
       final jsonData = await _exportImportService.exportToJson();
       
-      // Generate filename
-      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
-      final fileName = 'keb_tang_backup_$timestamp.json';
+      // Generate default filename
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
+      final defaultFileName = 'keb_tang_backup_$timestamp.json';
+      
+      if (Platform.isAndroid || Platform.isIOS) {
+        // For mobile: Use saveFile with bytes
+        // This uses the Storage Access Framework (SAF) on Android
+        final bytes = utf8.encode(jsonData);
+        
+        final outputPath = await FilePicker.platform.saveFile(
+          dialogTitle: 'บันทึกไฟล์สำรองข้อมูล',
+          fileName: defaultFileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+          bytes: Uint8List.fromList(bytes),
+        );
 
-      // Open save dialog
-      String? outputFile = await FilePicker.platform.saveFile(
-        dialogTitle: 'บันทึกไฟล์สำรองข้อมูล',
-        fileName: fileName,
-        type: FileType.custom,
-        allowedExtensions: ['json'],
-        bytes: utf8.encode(jsonData), // For web support if needed
-      );
-
-      // On Android/iOS saveFile might return null if cancelled, 
-      // or a path even if file not fully "written" by the picker itself on some platforms.
-      // But file_picker 8+ saveFile on Android returns the path to the created file.
-      // We explicitly write to it to ensure content is saved.
-
-      if (outputFile != null) {
-        final file = File(outputFile);
-        await file.writeAsString(jsonData);
-        _showSuccess('บันทึกไฟล์สำเร็จ: $outputFile');
+        // On Android/iOS, if bytes are provided, the file is automatically written
+        // outputPath might be null even on success (platform-dependent)
+        setState(() => _isLoading = false);
+        if (outputPath != null) {
+          _showSuccess('บันทึกไฟล์สำเร็จ');
+        }
+        // If outputPath is null, assume user cancelled (no error thrown = success)
       } else {
-        // User cancelled
-      }
+        // For desktop: Use saveFile to get path, then write manually
+        final outputPath = await FilePicker.platform.saveFile(
+          dialogTitle: 'บันทึกไฟล์สำรองข้อมูล',
+          fileName: defaultFileName,
+          type: FileType.custom,
+          allowedExtensions: ['json'],
+        );
 
-      setState(() => _isLoading = false);
+        if (outputPath == null) {
+          // User cancelled
+          setState(() => _isLoading = false);
+          return;
+        }
+
+        final file = File(outputPath);
+        await file.writeAsString(jsonData);
+        
+        setState(() => _isLoading = false);
+        _showSuccess('บันทึกไฟล์สำเร็จ');
+      }
     } catch (e) {
       setState(() => _isLoading = false);
       _showError('ไม่สามารถบันทึกไฟล์: $e');
@@ -67,7 +117,22 @@ class _BackupScreenState extends State<BackupScreen> {
       if (result == null || result.files.isEmpty) return;
 
       final filePath = result.files.first.path;
-      if (filePath == null) return;
+      if (filePath == null) {
+        _showError('ไม่พบที่อยู่ไฟล์');
+        return;
+      }
+      
+      final file = File(filePath);
+      if (!await file.exists()) {
+         _showError('ไม่สามารถเข้าถึงไฟล์ได้: $filePath');
+         return;
+      }
+      
+      final length = await file.length();
+      if (length == 0) {
+        _showError('ไฟล์ไม่มีข้อมูล (ขนาด 0 bytes)');
+        return;
+      }
 
       // Show strategy selection dialog
       final strategy = await _showImportStrategyDialog();
@@ -159,12 +224,20 @@ class _BackupScreenState extends State<BackupScreen> {
                         padding: const EdgeInsets.all(16),
                         child: Column(
                           children: [
-                            _buildActionButton(
-                              icon: Icons.save_alt,
+                             _buildActionButton(
+                              icon: Icons.save,
                               label: 'บันทึกไฟล์ลงเครื่อง',
-                              subtitle: 'บันทึกข้อมูลเป็นไฟล์ JSON',
+                              subtitle: 'เลือกตำแหน่งที่จะบันทึกไฟล์',
                               color: Colors.blue,
                               onPressed: _exportToLocal,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildActionButton(
+                              icon: Icons.share,
+                              label: 'แชร์ไฟล์สำรองข้อมูล',
+                              subtitle: 'ส่งไปยังแอปอื่น หรือบันทึกบนคลาวด์',
+                              color: Colors.indigo,
+                              onPressed: _exportBackup,
                             ),
                             const SizedBox(height: 12),
                             _buildActionButton(
@@ -185,15 +258,19 @@ class _BackupScreenState extends State<BackupScreen> {
                       child: Padding(
                         padding: const EdgeInsets.all(16),
                         child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Icon(Icons.info_outline, color: Colors.blue.shade700),
                             const SizedBox(width: 12),
                             Expanded(
                               child: Text(
-                                'แนะนำให้สำรองข้อมูลเป็นประจำเพื่อป้องกันข้อมูลสูญหาย',
+                                'ข้อแนะนำ:\n'
+                                '• กด "ส่งออก" แล้วเลือก "Save to Files" (บันทึกลงไฟล์) เพื่อเก็บข้อมูลไว้ในเครื่อง\n'
+                                '• หรือเลือกแอป Google Drive เพื่อสำรองข้อมูลบนคลาวด์',
                                 style: TextStyle(
                                   color: Colors.blue.shade700,
                                   fontSize: 13,
+                                  height: 1.5,
                                 ),
                               ),
                             ),
