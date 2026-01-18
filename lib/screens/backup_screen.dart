@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
-import 'package:share_plus/share_plus.dart';
+import 'dart:convert';
+import 'dart:io';
 import '../services/export_import_service.dart';
-import '../services/google_drive_service.dart';
 
 class BackupScreen extends StatefulWidget {
   const BackupScreen({super.key});
@@ -13,54 +13,45 @@ class BackupScreen extends StatefulWidget {
 
 class _BackupScreenState extends State<BackupScreen> {
   final ExportImportService _exportImportService = ExportImportService();
-  final GoogleDriveService _driveService = GoogleDriveService();
-  
   bool _isLoading = false;
-  List<DriveBackupFile> _driveBackups = [];
-
-  @override
-  void initState() {
-    super.initState();
-    _checkDriveAuth();
-  }
-
-  Future<void> _checkDriveAuth() async {
-    if (_driveService.isAuthenticated) {
-      await _loadDriveBackups();
-    }
-  }
-
-  Future<void> _loadDriveBackups() async {
-    try {
-      setState(() => _isLoading = true);
-      final backups = await _driveService.listBackups();
-      setState(() {
-        _driveBackups = backups;
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showError('ไม่สามารถโหลดรายการสำรองจาก Google Drive: $e');
-    }
-  }
 
   Future<void> _exportToLocal() async {
     try {
       setState(() => _isLoading = true);
-      final filePath = await _exportImportService.getShareableFilePath();
-      setState(() => _isLoading = false);
+      
+      // Get JSON data
+      final jsonData = await _exportImportService.exportToJson();
+      
+      // Generate filename
+      final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-').split('.').first;
+      final fileName = 'keb_tang_backup_$timestamp.json';
 
-      // Share the file
-      await Share.shareXFiles(
-        [XFile(filePath)],
-        subject: 'เก็บตังค์ - สำรองข้อมูล',
-        text: 'ไฟล์สำรองข้อมูลจากแอป เก็บตังค์',
+      // Open save dialog
+      String? outputFile = await FilePicker.platform.saveFile(
+        dialogTitle: 'บันทึกไฟล์สำรองข้อมูล',
+        fileName: fileName,
+        type: FileType.custom,
+        allowedExtensions: ['json'],
+        bytes: utf8.encode(jsonData), // For web support if needed
       );
 
-      _showSuccess('ส่งออกข้อมูลสำเร็จ');
+      // On Android/iOS saveFile might return null if cancelled, 
+      // or a path even if file not fully "written" by the picker itself on some platforms.
+      // But file_picker 8+ saveFile on Android returns the path to the created file.
+      // We explicitly write to it to ensure content is saved.
+
+      if (outputFile != null) {
+        final file = File(outputFile);
+        await file.writeAsString(jsonData);
+        _showSuccess('บันทึกไฟล์สำเร็จ: $outputFile');
+      } else {
+        // User cancelled
+      }
+
+      setState(() => _isLoading = false);
     } catch (e) {
       setState(() => _isLoading = false);
-      _showError('ไม่สามารถส่งออกข้อมูล: $e');
+      _showError('ไม่สามารถบันทึกไฟล์: $e');
     }
   }
 
@@ -89,65 +80,6 @@ class _BackupScreenState extends State<BackupScreen> {
     } catch (e) {
       setState(() => _isLoading = false);
       _showError('ไม่สามารถนำเข้าข้อมูล: $e');
-    }
-  }
-
-  Future<void> _exportToDrive() async {
-    try {
-      if (!_driveService.isAuthenticated) {
-        _showError('กรุณาเชื่อมต่อกับ Google Drive ก่อน');
-        return;
-      }
-
-      setState(() => _isLoading = true);
-      final filePath = await _exportImportService.exportToFile();
-      await _driveService.uploadBackup(filePath);
-      setState(() => _isLoading = false);
-
-      _showSuccess('อัปโหลดข้อมูลไปยัง Google Drive สำเร็จ');
-      await _loadDriveBackups();
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showError('ไม่สามารถอัปโหลดไปยัง Google Drive: $e');
-    }
-  }
-
-  Future<void> _importFromDrive(String fileId) async {
-    try {
-      // Show strategy selection dialog
-      final strategy = await _showImportStrategyDialog();
-      if (strategy == null) return;
-
-      setState(() => _isLoading = true);
-      final jsonData = await _driveService.downloadBackup(fileId);
-      final count = await _exportImportService.importFromJson(jsonData, strategy);
-      setState(() => _isLoading = false);
-
-      _showSuccess('นำเข้าข้อมูลจาก Google Drive สำเร็จ: $count รายการ');
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showError('ไม่สามารถนำเข้าข้อมูลจาก Google Drive: $e');
-    }
-  }
-
-  Future<void> _connectToDrive() async {
-    try {
-      setState(() => _isLoading = true);
-      final success = await _driveService.authenticate();
-      setState(() => _isLoading = false);
-
-      if (success) {
-        _showSuccess('เชื่อมต่อกับ Google Drive สำเร็จ');
-        await _loadDriveBackups();
-      } else {
-        _showError(
-          'Google Drive ยังไม่ได้ตั้งค่า\n'
-          'กรุณาติดต่อผู้พัฒนาเพื่อตั้งค่า OAuth credentials'
-        );
-      }
-    } catch (e) {
-      setState(() => _isLoading = false);
-      _showError('ไม่สามารถเชื่อมต่อกับ Google Drive: $e');
     }
   }
 
@@ -218,8 +150,7 @@ class _BackupScreenState extends State<BackupScreen> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Local Backup Section
-                  _buildSectionTitle('สำรองข้อมูลในเครื่อง'),
+                   _buildSectionTitle('จัดการข้อมูล'),
                   const SizedBox(height: 12),
                   Card(
                     child: Padding(
@@ -227,15 +158,15 @@ class _BackupScreenState extends State<BackupScreen> {
                       child: Column(
                         children: [
                           _buildActionButton(
-                            icon: Icons.upload_file,
-                            label: 'ส่งออกข้อมูล',
+                            icon: Icons.save_alt,
+                            label: 'บันทึกไฟล์ลงเครื่อง',
                             subtitle: 'บันทึกข้อมูลเป็นไฟล์ JSON',
                             color: Colors.blue,
                             onPressed: _exportToLocal,
                           ),
                           const SizedBox(height: 12),
                           _buildActionButton(
-                            icon: Icons.download,
+                            icon: Icons.file_open,
                             label: 'นำเข้าข้อมูล',
                             subtitle: 'กู้คืนข้อมูลจากไฟล์',
                             color: Colors.green,
@@ -246,79 +177,6 @@ class _BackupScreenState extends State<BackupScreen> {
                     ),
                   ),
                   const SizedBox(height: 32),
-
-                  // Google Drive Section
-                  _buildSectionTitle('Google Drive'),
-                  const SizedBox(height: 12),
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        children: [
-                          if (!_driveService.isAuthenticated) ...[
-                            _buildActionButton(
-                              icon: Icons.cloud,
-                              label: 'เชื่อมต่อ Google Drive',
-                              subtitle: 'เข้าสู่ระบบด้วยบัญชี Google',
-                              color: Colors.purple,
-                              onPressed: _connectToDrive,
-                            ),
-                          ] else ...[
-                            _buildActionButton(
-                              icon: Icons.cloud_upload,
-                              label: 'อัปโหลดไป Google Drive',
-                              subtitle: 'สำรองข้อมูลบน Cloud',
-                              color: Colors.blue,
-                              onPressed: _exportToDrive,
-                            ),
-                            const SizedBox(height: 24),
-                            const Divider(),
-                            const SizedBox(height: 8),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'ไฟล์สำรองบน Drive',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                IconButton(
-                                  icon: const Icon(Icons.refresh),
-                                  onPressed: _loadDriveBackups,
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 8),
-                            if (_driveBackups.isEmpty)
-                              const Padding(
-                                padding: EdgeInsets.all(16),
-                                child: Text(
-                                  'ยังไม่มีไฟล์สำรอง',
-                                  style: TextStyle(color: Colors.grey),
-                                ),
-                              )
-                            else
-                              ..._driveBackups.map((backup) => ListTile(
-                                    leading: const Icon(Icons.cloud_done),
-                                    title: Text(backup.name),
-                                    subtitle: Text(
-                                      '${_formatDate(backup.createdTime)} • ${_formatSize(backup.size)}',
-                                    ),
-                                    trailing: IconButton(
-                                      icon: const Icon(Icons.download),
-                                      onPressed: () => _importFromDrive(backup.id),
-                                    ),
-                                  )),
-                          ],
-                        ],
-                      ),
-                    ),
-                  ),
-
-                  const SizedBox(height: 32),
-
                   // Info Card
                   Card(
                     color: Colors.blue.shade50,
