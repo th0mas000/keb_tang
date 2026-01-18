@@ -18,11 +18,42 @@ class StatisticsScreen extends StatelessWidget {
     return DefaultTabController(
       length: 4,
       child: Scaffold(
+        backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
-          title: const Text('สถิติ'),
-          bottom: const TabBar(
+          title: const Text(
+            'สถิติ',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
+          centerTitle: true,
+          elevation: 0,
+          flexibleSpace: Container(
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF64748B),
+                  const Color(0xFF64748B),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+          ),
+          foregroundColor: Colors.white,
+          bottom: TabBar(
             isScrollable: false,
-            tabs: [
+            indicatorColor: Colors.white,
+            indicatorWeight: 3,
+            labelColor: Colors.white,
+            unselectedLabelColor: Colors.white70,
+            labelStyle: const TextStyle(
+              fontWeight: FontWeight.bold,
+              fontSize: 14,
+            ),
+            unselectedLabelStyle: const TextStyle(
+              fontWeight: FontWeight.normal,
+              fontSize: 14,
+            ),
+            tabs: const [
               Tab(text: 'รายวัน'),
               Tab(text: 'รายสัปดาห์'),
               Tab(text: 'รายเดือน'),
@@ -82,6 +113,19 @@ class _DailyChartViewState extends State<DailyChartView> {
       initialDate: _selectedDate,
       firstDate: DateTime(2020),
       lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: const Color(0xFF64748B),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
     );
     if (picked != null && picked != _selectedDate) {
       setState(() => _selectedDate = picked);
@@ -117,6 +161,7 @@ class _DailyChartViewState extends State<DailyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: ResponsiveContainer(
         child: Column(
           children: [
@@ -125,68 +170,133 @@ class _DailyChartViewState extends State<DailyChartView> {
             const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF64748B),
+                        ),
+                      ),
+                    )
                   : PeriodChart(data: _chartData, period: 'daily'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCategoryBreakdown,
-        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-        child: const Icon(Icons.pie_chart),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF64748B),
+              const Color(0xFF64748B),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.teal.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showCategoryBreakdown,
+          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.pie_chart_rounded, size: 28),
+        ),
       ),
     );
   }
 
   Widget _buildDateSelector() {
     return Container(
-      padding: const EdgeInsets.all(16),
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.teal.shade50,
+            Colors.cyan.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.teal.shade200,
+          width: 1,
+        ),
+      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          IconButton(
-            icon: const Icon(Icons.chevron_left),
-            onPressed: () {
-              setState(() {
-                _selectedDate = _selectedDate.subtract(const Duration(days: 1));
-              });
-              _loadData();
-            },
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF64748B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedDate = _selectedDate.subtract(const Duration(days: 1));
+                });
+                _loadData();
+              },
+            ),
           ),
           GestureDetector(
             onTap: _selectDate,
             child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
               decoration: BoxDecoration(
-                border: Border.all(color: Colors.grey),
-                borderRadius: BorderRadius.circular(8),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(12),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
               ),
               child: Row(
                 children: [
+                  Icon(
+                    Icons.calendar_today,
+                    size: 18,
+                    color: const Color(0xFF64748B),
+                  ),
+                  const SizedBox(width: 12),
                   Text(
                     DateFormat('d MMM yyyy', 'th_TH').format(_selectedDate),
                     style: const TextStyle(
                       fontSize: 16,
-                      fontWeight: FontWeight.w500,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const SizedBox(width: 8),
-                  const Icon(Icons.calendar_today, size: 16),
                 ],
               ),
             ),
           ),
-          IconButton(
-            icon: const Icon(Icons.chevron_right),
-            onPressed: _selectedDate.isBefore(DateTime.now())
-                ? () {
-                    setState(() {
-                      _selectedDate = _selectedDate.add(const Duration(days: 1));
-                    });
-                    _loadData();
-                  }
-                : null,
+          Container(
+            decoration: BoxDecoration(
+              color: _selectedDate.isBefore(DateTime.now())
+                  ? const Color(0xFF64748B)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white),
+              onPressed: _selectedDate.isBefore(DateTime.now())
+                  ? () {
+                      setState(() {
+                        _selectedDate = _selectedDate.add(const Duration(days: 1));
+                      });
+                      _loadData();
+                    }
+                  : null,
+            ),
           ),
         ],
       ),
@@ -199,26 +309,39 @@ class _DailyChartViewState extends State<DailyChartView> {
       child: Row(
         children: [
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายรับ',
               amount: _summary!.totalIncome,
-              color: Colors.green,
+              icon: Icons.arrow_upward_rounded,
+              gradientColors: [
+                const Color(0xFF10B981),
+                const Color(0xFF10B981),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายจ่าย',
               amount: _summary!.totalExpense,
-              color: Colors.red,
+              icon: Icons.arrow_downward_rounded,
+              gradientColors: [
+                const Color(0xFFEF4444),
+                const Color(0xFFEF4444),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: _summary!.netLabel,
               amount: _summary!.net.abs(),
-              color: _summary!.net >= 0 ? Colors.blue : Colors.orange,
+              icon: _summary!.net >= 0 
+                  ? Icons.trending_up_rounded 
+                  : Icons.trending_down_rounded,
+              gradientColors: _summary!.net >= 0
+                  ? [const Color(0xFF3B82F6), const Color(0xFF3B82F6)]
+                  : [const Color(0xFFF59E0B), const Color(0xFFF59E0B)],
             ),
           ),
         ],
@@ -294,58 +417,121 @@ class _WeeklyChartViewState extends State<WeeklyChartView> {
     final weekEnd = _selectedWeekStart.add(const Duration(days: 6));
     
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: ResponsiveContainer(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: () {
-                      setState(() {
-                        _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
-                      });
-                      _loadData();
-                    },
-                  ),
-                  Text(
-                    '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: weekEnd.isBefore(DateTime.now())
-                        ? () {
-                            setState(() {
-                              _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
-                            });
-                            _loadData();
-                          }
-                        : null,
-                  ),
-                ],
-              ),
-            ),
+            _buildWeekSelector(weekEnd),
             if (_summary != null) _buildSummaryCards(),
             const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF64748B),
+                        ),
+                      ),
+                    )
                   : PeriodChart(data: _chartData, period: 'weekly'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCategoryBreakdown,
-        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-        child: const Icon(Icons.pie_chart),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF64748B),
+              const Color(0xFF64748B),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.teal.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showCategoryBreakdown,
+          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.pie_chart_rounded, size: 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildWeekSelector(DateTime weekEnd) {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.teal.shade50,
+            Colors.cyan.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.teal.shade200,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF64748B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
+                });
+                _loadData();
+              },
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: weekEnd.isBefore(DateTime.now())
+                  ? const Color(0xFF64748B)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white),
+              onPressed: weekEnd.isBefore(DateTime.now())
+                  ? () {
+                      setState(() {
+                        _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
+                      });
+                      _loadData();
+                    }
+                  : null,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -356,26 +542,39 @@ class _WeeklyChartViewState extends State<WeeklyChartView> {
       child: Row(
         children: [
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายรับ',
               amount: _summary!.totalIncome,
-              color: Colors.green,
+              icon: Icons.arrow_upward_rounded,
+              gradientColors: [
+                const Color(0xFF10B981),
+                const Color(0xFF10B981),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายจ่าย',
               amount: _summary!.totalExpense,
-              color: Colors.red,
+              icon: Icons.arrow_downward_rounded,
+              gradientColors: [
+                const Color(0xFFEF4444),
+                const Color(0xFFEF4444),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: _summary!.netLabel,
               amount: _summary!.net.abs(),
-              color: _summary!.net >= 0 ? Colors.blue : Colors.orange,
+              icon: _summary!.net >= 0 
+                  ? Icons.trending_up_rounded 
+                  : Icons.trending_down_rounded,
+              gradientColors: _summary!.net >= 0
+                  ? [const Color(0xFF3B82F6), const Color(0xFF3B82F6)]
+                  : [const Color(0xFFF59E0B), const Color(0xFFF59E0B)],
             ),
           ),
         ],
@@ -445,65 +644,129 @@ class _MonthlyChartViewState extends State<MonthlyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: ResponsiveContainer(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: () {
-                      setState(() {
-                        _selectedMonth = DateTime(
-                          _selectedMonth.year,
-                          _selectedMonth.month - 1,
-                        );
-                      });
-                      _loadData();
-                    },
-                  ),
-                  Text(
-                    DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
-                            .isBefore(DateTime.now())
-                        ? () {
-                            setState(() {
-                              _selectedMonth = DateTime(
-                                _selectedMonth.year,
-                                _selectedMonth.month + 1,
-                              );
-                            });
-                            _loadData();
-                          }
-                        : null,
-                  ),
-                ],
-              ),
-            ),
+            _buildMonthSelector(),
             if (_summary != null) _buildSummaryCards(),
             const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF64748B),
+                        ),
+                      ),
+                    )
                   : PeriodChart(data: _chartData, period: 'monthly'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCategoryBreakdown,
-        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-        child: const Icon(Icons.pie_chart),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF64748B),
+              const Color(0xFF64748B),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.teal.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showCategoryBreakdown,
+          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.pie_chart_rounded, size: 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMonthSelector() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.teal.shade50,
+            Colors.cyan.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.teal.shade200,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF64748B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedMonth = DateTime(
+                    _selectedMonth.year,
+                    _selectedMonth.month - 1,
+                  );
+                });
+                _loadData();
+              },
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
+                      .isBefore(DateTime.now())
+                  ? const Color(0xFF64748B)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white),
+              onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
+                      .isBefore(DateTime.now())
+                  ? () {
+                      setState(() {
+                        _selectedMonth = DateTime(
+                          _selectedMonth.year,
+                          _selectedMonth.month + 1,
+                        );
+                      });
+                      _loadData();
+                    }
+                  : null,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -514,26 +777,39 @@ class _MonthlyChartViewState extends State<MonthlyChartView> {
       child: Row(
         children: [
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายรับ',
               amount: _summary!.totalIncome,
-              color: Colors.green,
+              icon: Icons.arrow_upward_rounded,
+              gradientColors: [
+                const Color(0xFF10B981),
+                const Color(0xFF10B981),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายจ่าย',
               amount: _summary!.totalExpense,
-              color: Colors.red,
+              icon: Icons.arrow_downward_rounded,
+              gradientColors: [
+                const Color(0xFFEF4444),
+                const Color(0xFFEF4444),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: _summary!.netLabel,
               amount: _summary!.net.abs(),
-              color: _summary!.net >= 0 ? Colors.blue : Colors.orange,
+              icon: _summary!.net >= 0 
+                  ? Icons.trending_up_rounded 
+                  : Icons.trending_down_rounded,
+              gradientColors: _summary!.net >= 0
+                  ? [const Color(0xFF3B82F6), const Color(0xFF3B82F6)]
+                  : [const Color(0xFFF59E0B), const Color(0xFFF59E0B)],
             ),
           ),
         ],
@@ -603,58 +879,121 @@ class _YearlyChartViewState extends State<YearlyChartView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: ResponsiveContainer(
         child: Column(
           children: [
-            Container(
-              padding: const EdgeInsets.all(16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.chevron_left),
-                    onPressed: () {
-                      setState(() {
-                        _selectedYear--;
-                      });
-                      _loadData();
-                    },
-                  ),
-                  Text(
-                    _selectedYear.toString(),
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w500,
-                    ),
-                  ),
-                  IconButton(
-                    icon: const Icon(Icons.chevron_right),
-                    onPressed: _selectedYear < DateTime.now().year
-                        ? () {
-                            setState(() {
-                              _selectedYear++;
-                            });
-                            _loadData();
-                          }
-                        : null,
-                  ),
-                ],
-              ),
-            ),
+            _buildYearSelector(),
             if (_summary != null) _buildSummaryCards(),
             const SizedBox(height: 16),
             Expanded(
               child: _isLoading
-                  ? const Center(child: CircularProgressIndicator())
+                  ? Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(
+                          const Color(0xFF64748B),
+                        ),
+                      ),
+                    )
                   : PeriodChart(data: _chartData, period: 'yearly'),
             ),
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showCategoryBreakdown,
-        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-        child: const Icon(Icons.pie_chart),
+      floatingActionButton: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [
+              const Color(0xFF64748B),
+              const Color(0xFF64748B),
+            ],
+          ),
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.teal.withOpacity(0.4),
+              blurRadius: 8,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: FloatingActionButton(
+          onPressed: _showCategoryBreakdown,
+          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          child: const Icon(Icons.pie_chart_rounded, size: 28),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildYearSelector() {
+    return Container(
+      margin: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            Colors.teal.shade50,
+            Colors.cyan.shade50,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: Colors.teal.shade200,
+          width: 1,
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: const Color(0xFF64748B),
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_left, color: Colors.white),
+              onPressed: () {
+                setState(() {
+                  _selectedYear--;
+                });
+                _loadData();
+              },
+            ),
+          ),
+          Expanded(
+            child: Center(
+              child: Text(
+                _selectedYear.toString(),
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ),
+          ),
+          Container(
+            decoration: BoxDecoration(
+              color: _selectedYear < DateTime.now().year
+                  ? const Color(0xFF64748B)
+                  : Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(10),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.chevron_right, color: Colors.white),
+              onPressed: _selectedYear < DateTime.now().year
+                  ? () {
+                      setState(() {
+                        _selectedYear++;
+                      });
+                      _loadData();
+                    }
+                  : null,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -665,26 +1004,39 @@ class _YearlyChartViewState extends State<YearlyChartView> {
       child: Row(
         children: [
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายรับ',
               amount: _summary!.totalIncome,
-              color: Colors.green,
+              icon: Icons.arrow_upward_rounded,
+              gradientColors: [
+                const Color(0xFF10B981),
+                const Color(0xFF10B981),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: 'รายจ่าย',
               amount: _summary!.totalExpense,
-              color: Colors.red,
+              icon: Icons.arrow_downward_rounded,
+              gradientColors: [
+                const Color(0xFFEF4444),
+                const Color(0xFFEF4444),
+              ],
             ),
           ),
-          const SizedBox(width: 8),
+          const SizedBox(width: 12),
           Expanded(
-            child: _SummaryCard(
+            child: _ModernSummaryCard(
               title: _summary!.netLabel,
               amount: _summary!.net.abs(),
-              color: _summary!.net >= 0 ? Colors.blue : Colors.orange,
+              icon: _summary!.net >= 0 
+                  ? Icons.trending_up_rounded 
+                  : Icons.trending_down_rounded,
+              gradientColors: _summary!.net >= 0
+                  ? [const Color(0xFF3B82F6), const Color(0xFF3B82F6)]
+                  : [const Color(0xFFF59E0B), const Color(0xFFF59E0B)],
             ),
           ),
         ],
@@ -693,44 +1045,67 @@ class _YearlyChartViewState extends State<YearlyChartView> {
   }
 }
 
-// Reusable Summary Card Widget
-class _SummaryCard extends StatelessWidget {
+// Modern Summary Card Widget
+class _ModernSummaryCard extends StatelessWidget {
   final String title;
   final double amount;
-  final Color color;
+  final IconData icon;
+  final List<Color> gradientColors;
 
-  const _SummaryCard({
+  const _ModernSummaryCard({
     required this.title,
     required this.amount,
-    required this.color,
+    required this.icon,
+    required this.gradientColors,
   });
 
   @override
   Widget build(BuildContext context) {
     return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(12),
+      elevation: 4,
+      shadowColor: gradientColors.first.withOpacity(0.3),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: gradientColors,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(16),
+        ),
+        padding: const EdgeInsets.all(16),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
+            Icon(
+              icon,
+              color: Colors.white,
+              size: 24,
+            ),
+            const SizedBox(height: 8),
             Text(
               title,
-              style: TextStyle(
+              style: const TextStyle(
                 fontSize: 12,
-                color: Colors.grey[600],
-                fontWeight: FontWeight.w500,
+                color: Colors.white,
+                fontWeight: FontWeight.w600,
               ),
             ),
-            const SizedBox(height: 4),
-            Text(
-              CurrencyFormatter.formatTHB(amount),
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-                color: color,
+            const SizedBox(height: 6),
+            FittedBox(
+              fit: BoxFit.scaleDown,
+              child: Text(
+                CurrencyFormatter.formatTHB(amount),
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+                maxLines: 1,
               ),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
             ),
           ],
         ),

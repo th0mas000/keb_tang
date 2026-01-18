@@ -18,6 +18,8 @@ class TransactionsListScreen extends StatefulWidget {
 class _TransactionsListScreenState extends State<TransactionsListScreen> {
   List<Transaction> _transactions = [];
   TransactionType? _filterType; // null means show all
+  DateTime? _startDate;
+  DateTime? _endDate;
   bool _isLoading = true;
   
   // Grouped data: Map<DateString, List<Transaction>>
@@ -37,10 +39,13 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
           ? await DatabaseHelper.instance.readAllTransactions()
           : await DatabaseHelper.instance.readTransactionsByType(_filterType!);
       
-      _groupTransactions(transactions);
+      // Filter by date range if set
+      final filteredTransactions = _filterByDateRange(transactions);
+      
+      _groupTransactions(filteredTransactions);
       
       setState(() {
-        _transactions = transactions;
+        _transactions = filteredTransactions;
         _isLoading = false;
       });
     } catch (e) {
@@ -51,6 +56,75 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
         );
       }
     }
+  }
+
+  List<Transaction> _filterByDateRange(List<Transaction> transactions) {
+    if (_startDate == null && _endDate == null) {
+      return transactions;
+    }
+    
+    return transactions.where((transaction) {
+      final transactionDate = DateTime(
+        transaction.date.year,
+        transaction.date.month,
+        transaction.date.day,
+      );
+      
+      if (_startDate != null && _endDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        return !transactionDate.isBefore(start) && !transactionDate.isAfter(end);
+      } else if (_startDate != null) {
+        final start = DateTime(_startDate!.year, _startDate!.month, _startDate!.day);
+        return !transactionDate.isBefore(start);
+      } else if (_endDate != null) {
+        final end = DateTime(_endDate!.year, _endDate!.month, _endDate!.day);
+        return !transactionDate.isAfter(end);
+      }
+      
+      return true;
+    }).toList();
+  }
+
+  Future<void> _pickDateRange() async {
+    final DateTimeRange? picked = await showDateRangePicker(
+      context: context,
+      firstDate: DateTime(2020),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDateRange: _startDate != null && _endDate != null
+          ? DateTimeRange(start: _startDate!, end: _endDate!)
+          : null,
+      locale: const Locale('th', 'TH'),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: ColorScheme.light(
+              primary: const Color(0xFF64748B),
+              onPrimary: Colors.white,
+              surface: Colors.white,
+              onSurface: Colors.black,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+
+    if (picked != null) {
+      setState(() {
+        _startDate = picked.start;
+        _endDate = picked.end;
+      });
+      _loadTransactions();
+    }
+  }
+
+  void _clearDateFilter() {
+    setState(() {
+      _startDate = null;
+      _endDate = null;
+    });
+    _loadTransactions();
   }
 
   void _groupTransactions(List<Transaction> transactions) {
@@ -118,7 +192,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
     } else if (checkDate == yesterday) {
       return 'เมื่อวาน'; // Yesterday
     } else {
-      return DateFormat('dd MMM yyyy').format(date);
+      return DateFormat('dd MMM yyyy', 'th_TH').format(date);
     }
   }
 
@@ -129,13 +203,29 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
       ..sort((a, b) => b.compareTo(a));
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       appBar: AppBar(
-        title: const Text('รายการทั้งหมด'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        scrolledUnderElevation: 0,
+        title: const Text(
+          'รายการทั้งหมด',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        backgroundColor: const Color(0xFF64748B),
+        foregroundColor: Colors.white,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.calendar_today_rounded),
+            tooltip: 'กรองตามวันที่',
+            onPressed: _pickDateRange,
+          ),
           PopupMenuButton<TransactionType?>(
-            icon: const Icon(Icons.filter_list),
+            icon: const Icon(Icons.filter_list_rounded),
+            tooltip: 'กรอง',
+            offset: const Offset(0, 45),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             onSelected: (value) {
               setState(() {
                 _filterType = value;
@@ -143,33 +233,54 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
               _loadTransactions();
             },
             itemBuilder: (context) => [
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: null,
                 child: Row(
                   children: [
-                    Icon(Icons.all_inclusive),
-                    SizedBox(width: 8),
-                    Text('ทั้งหมด'),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade200,
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(Icons.all_inclusive, size: 18, color: Colors.grey.shade700),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('ทั้งหมด'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: TransactionType.income,
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_upward, color: Colors.green),
-                    SizedBox(width: 8),
-                    Text('รายรับ'),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFD1FAE5),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.arrow_upward_rounded, size: 18, color: Colors.green),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('รายรับ'),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 value: TransactionType.expense,
                 child: Row(
                   children: [
-                    Icon(Icons.arrow_downward, color: Colors.red),
-                    SizedBox(width: 8),
-                    Text('รายจ่าย'),
+                    Container(
+                      padding: const EdgeInsets.all(6),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFEE2E2),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: const Icon(Icons.arrow_downward_rounded, size: 18, color: Colors.red),
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('รายจ่าย'),
                   ],
                 ),
               ),
@@ -177,31 +288,128 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
           ),
         ],
       ),
-      backgroundColor: Colors.grey[50],
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  const Color(0xFF64748B),
+                ),
+              ),
+            )
           : _transactions.isEmpty
               ? Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.inbox, size: 64, color: Colors.grey[400]),
-                      const SizedBox(height: 16),
-                      Text(
-                        'ยังไม่มีรายการ',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey[600],
+                  child: Padding(
+                    padding: const EdgeInsets.all(40),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(24),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              colors: [
+                                const Color(0xFFF7F8FA),
+                                const Color(0xFFF7F8FA),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.inbox_rounded,
+                            size: 64,
+                            color: const Color(0xFF64748B),
+                          ),
                         ),
-                      ),
-                    ],
+                        const SizedBox(height: 24),
+                        Text(
+                          'ยังไม่มีรายการ',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Colors.grey.shade800,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          _filterType == null
+                              ? 'เริ่มเพิ่มรายการแรกของคุณ'
+                              : 'ไม่พบรายการที่กรอง',
+                          style: TextStyle(
+                            fontSize: 15,
+                            color: Colors.grey.shade600,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 )
               : RefreshIndicator(
                   onRefresh: _loadTransactions,
+                  color: const Color(0xFF64748B),
                   child: ResponsiveContainer(
-                    child: ListView.builder(
-                      padding: const EdgeInsets.only(bottom: 24),
+                    child: Column(
+                      children: [
+                        // Date filter chip
+                        if (_startDate != null || _endDate != null)
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: const Color(0xFF64748B).withOpacity(0.1),
+                                      borderRadius: BorderRadius.circular(8),
+                                      border: Border.all(
+                                        color: const Color(0xFF64748B),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        Row(
+                                          children: [
+                                            const Icon(
+                                              Icons.date_range_rounded,
+                                              size: 18,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                            const SizedBox(width: 8),
+                                            Text(
+                                              '${DateFormat('dd/MM/yyyy').format(_startDate!)} - ${DateFormat('dd/MM/yyyy').format(_endDate!)}',
+                                              style: const TextStyle(
+                                                fontSize: 14,
+                                                fontWeight: FontWeight.w600,
+                                                color: Color(0xFF64748B),
+                                              ),
+                                            ),
+                                          ],
+                                        ),
+                                        InkWell(
+                                          onTap: _clearDateFilter,
+                                          borderRadius: BorderRadius.circular(12),
+                                          child: Container(
+                                            padding: const EdgeInsets.all(4),
+                                            child: const Icon(
+                                              Icons.close_rounded,
+                                              size: 18,
+                                              color: Color(0xFF64748B),
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        // Transaction list
+                        Expanded(
+                          child: ListView.builder(
+                      padding: const EdgeInsets.only(bottom: 24, top: 8),
                       itemCount: sortedKeys.length,
                       itemBuilder: (context, index) {
                         final dateKey = sortedKeys[index];
@@ -212,39 +420,72 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Date Header
-                            Padding(
-                              padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                            Container(
+                              margin: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade100,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: Colors.grey.shade300,
+                                  width: 1,
+                                ),
+                              ),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    _formatDateHeader(dateKey),
-                                    style: const TextStyle(
-                                      fontSize: 16,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.black87,
-                                    ),
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.calendar_today_rounded,
+                                        size: 18,
+                                        color: Colors.grey.shade600,
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _formatDateHeader(dateKey),
+                                        style: TextStyle(
+                                          fontSize: 15,
+                                          fontWeight: FontWeight.bold,
+                                          color: Colors.grey.shade800,
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   Row(
                                     children: [
                                       if (totals['income']! > 0)
-                                        Text(
-                                          '+${CurrencyFormatter.formatTHB(totals['income']!)}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.green,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFD1FAE5),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '+${CurrencyFormatter.formatTHB(totals['income']!)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFF047857),
+                                            ),
                                           ),
                                         ),
                                       if (totals['income']! > 0 && totals['expense']! > 0)
-                                        const SizedBox(width: 8),
+                                        const SizedBox(width: 6),
                                       if (totals['expense']! > 0)
-                                        Text(
-                                          '-${CurrencyFormatter.formatTHB(totals['expense']!)}',
-                                          style: const TextStyle(
-                                            fontSize: 13,
-                                            fontWeight: FontWeight.w600,
-                                            color: Colors.red,
+                                        Container(
+                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFFEE2E2),
+                                            borderRadius: BorderRadius.circular(6),
+                                          ),
+                                          child: Text(
+                                            '-${CurrencyFormatter.formatTHB(totals['expense']!)}',
+                                            style: const TextStyle(
+                                              fontSize: 12,
+                                              fontWeight: FontWeight.bold,
+                                              color: Color(0xFFB91C1C),
+                                            ),
                                           ),
                                         ),
                                     ],
@@ -265,6 +506,9 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
                           ],
                         );
                       },
+                    ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
