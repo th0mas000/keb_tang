@@ -7,6 +7,7 @@ import 'add_transaction_screen.dart';
 import 'transactions_list_screen.dart';
 import 'bill_scan_screen.dart';
 import 'statistics_screen.dart';
+import 'backup_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -123,6 +124,18 @@ class _HomeScreenState extends State<HomeScreen> {
         title: const Text('เก็บตังค์'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
         actions: [
+          IconButton(
+            icon: const Icon(Icons.backup),
+            onPressed: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const BackupScreen(),
+                ),
+              );
+            },
+            tooltip: 'สำรองข้อมูล',
+          ),
           IconButton(
             icon: const Icon(Icons.bar_chart),
             onPressed: () {

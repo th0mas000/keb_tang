@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../models/chart_data.dart';
+import '../models/category_data.dart';
 import '../services/chart_data_service.dart';
+import '../services/category_chart_service.dart';
 import '../widgets/period_chart.dart';
 import '../widgets/income_pie_chart.dart';
+import '../widgets/category_pie_chart.dart';
 import '../utils/currency_formatter.dart';
 
 class StatisticsScreen extends StatelessWidget {
@@ -49,6 +52,7 @@ class DailyChartView extends StatefulWidget {
 
 class _DailyChartViewState extends State<DailyChartView> {
   final ChartDataService _chartService = ChartDataService();
+  final CategoryChartService _categoryService = CategoryChartService();
   DateTime _selectedDate = DateTime.now();
   List<ChartDataPoint> _chartData = [];
   PeriodSummary? _summary;
@@ -84,21 +88,51 @@ class _DailyChartViewState extends State<DailyChartView> {
     }
   }
 
+  void _showCategoryBreakdown() async {
+    final startOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day);
+    final endOfDay = DateTime(_selectedDate.year, _selectedDate.month, _selectedDate.day, 23, 59, 59);
+    
+    final breakdown = await _categoryService.getCategoryBreakdown(startOfDay, endOfDay);
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 500,
+            ),
+            child: CategoryPieChart(breakdown: breakdown),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _buildDateSelector(),
-        if (_summary != null) _buildSummaryCards(),
-        if (_summary != null) const SizedBox(height: 8),
-        if (_summary != null) IncomePieChart(summary: _summary!),
-        if (_summary != null) const Divider(height: 32),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : PeriodChart(data: _chartData, period: 'daily'),
-        ),
-      ],
+    return Scaffold(
+      body: Column(
+        children: [
+          _buildDateSelector(),
+          if (_summary != null) _buildSummaryCards(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : PeriodChart(data: _chartData, period: 'daily'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCategoryBreakdown,
+        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+        child: const Icon(Icons.pie_chart),
+      ),
     );
   }
 
@@ -200,6 +234,7 @@ class WeeklyChartView extends StatefulWidget {
 
 class _WeeklyChartViewState extends State<WeeklyChartView> {
   final ChartDataService _chartService = ChartDataService();
+  final CategoryChartService _categoryService = CategoryChartService();
   DateTime _selectedWeekStart = _getWeekStart(DateTime.now());
   List<ChartDataPoint> _chartData = [];
   PeriodSummary? _summary;
@@ -226,57 +261,87 @@ class _WeeklyChartViewState extends State<WeeklyChartView> {
     });
   }
 
+  void _showCategoryBreakdown() async {
+    final startOfWeek = DateTime(_selectedWeekStart.year, _selectedWeekStart.month, _selectedWeekStart.day);
+    final endOfWeek = startOfWeek.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+    
+    final breakdown = await _categoryService.getCategoryBreakdown(startOfWeek, endOfWeek);
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 500,
+            ),
+            child: CategoryPieChart(breakdown: breakdown),
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final weekEnd = _selectedWeekStart.add(const Duration(days: 6));
     
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () {
-                  setState(() {
-                    _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
-                  });
-                  _loadData();
-                },
-              ),
-              Text(
-                '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    setState(() {
+                      _selectedWeekStart = _selectedWeekStart.subtract(const Duration(days: 7));
+                    });
+                    _loadData();
+                  },
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: weekEnd.isBefore(DateTime.now())
-                    ? () {
-                        setState(() {
-                          _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
-                        });
-                        _loadData();
-                      }
-                    : null,
-              ),
-            ],
+                Text(
+                  '${DateFormat('d MMM', 'th_TH').format(_selectedWeekStart)} - ${DateFormat('d MMM yyyy', 'th_TH').format(weekEnd)}',
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: weekEnd.isBefore(DateTime.now())
+                      ? () {
+                          setState(() {
+                            _selectedWeekStart = _selectedWeekStart.add(const Duration(days: 7));
+                          });
+                          _loadData();
+                        }
+                      : null,
+                ),
+              ],
+            ),
           ),
-        ),
-        if (_summary != null) _buildSummaryCards(),
-        if (_summary != null) const SizedBox(height: 8),
-        if (_summary != null) IncomePieChart(summary: _summary!),
-        if (_summary != null) const Divider(height: 32),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : PeriodChart(data: _chartData, period: 'weekly'),
-        ),
-      ],
+          if (_summary != null) _buildSummaryCards(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : PeriodChart(data: _chartData, period: 'weekly'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCategoryBreakdown,
+        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+        child: const Icon(Icons.pie_chart),
+      ),
     );
   }
 
@@ -324,6 +389,7 @@ class MonthlyChartView extends StatefulWidget {
 
 class _MonthlyChartViewState extends State<MonthlyChartView> {
   final ChartDataService _chartService = ChartDataService();
+  final CategoryChartService _categoryService = CategoryChartService();
   DateTime _selectedMonth = DateTime.now();
   List<ChartDataPoint> _chartData = [];
   PeriodSummary? _summary;
@@ -346,62 +412,92 @@ class _MonthlyChartViewState extends State<MonthlyChartView> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () {
-                  setState(() {
-                    _selectedMonth = DateTime(
-                      _selectedMonth.year,
-                      _selectedMonth.month - 1,
-                    );
-                  });
-                  _loadData();
-                },
-              ),
-              Text(
-                DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
-                        .isBefore(DateTime.now())
-                    ? () {
-                        setState(() {
-                          _selectedMonth = DateTime(
-                            _selectedMonth.year,
-                            _selectedMonth.month + 1,
-                          );
-                        });
-                        _loadData();
-                      }
-                    : null,
-              ),
-            ],
+  void _showCategoryBreakdown() async {
+    final startOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month, 1);
+    final endOfMonth = DateTime(_selectedMonth.year, _selectedMonth.month + 1, 0, 23, 59, 59);
+    
+    final breakdown = await _categoryService.getCategoryBreakdown(startOfMonth, endOfMonth);
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 500,
+            ),
+            child: CategoryPieChart(breakdown: breakdown),
           ),
         ),
-        if (_summary != null) _buildSummaryCards(),
-        if (_summary != null) const SizedBox(height: 8),
-        if (_summary != null) IncomePieChart(summary: _summary!),
-        if (_summary != null) const Divider(height: 32),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : PeriodChart(data: _chartData, period: 'monthly'),
-        ),
-      ],
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    setState(() {
+                      _selectedMonth = DateTime(
+                        _selectedMonth.year,
+                        _selectedMonth.month - 1,
+                      );
+                    });
+                    _loadData();
+                  },
+                ),
+                Text(
+                  DateFormat('MMMM yyyy', 'th_TH').format(_selectedMonth),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: DateTime(_selectedMonth.year, _selectedMonth.month + 1)
+                          .isBefore(DateTime.now())
+                      ? () {
+                          setState(() {
+                            _selectedMonth = DateTime(
+                              _selectedMonth.year,
+                              _selectedMonth.month + 1,
+                            );
+                          });
+                          _loadData();
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          if (_summary != null) _buildSummaryCards(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : PeriodChart(data: _chartData, period: 'monthly'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCategoryBreakdown,
+        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+        child: const Icon(Icons.pie_chart),
+      ),
     );
   }
 
@@ -449,6 +545,7 @@ class YearlyChartView extends StatefulWidget {
 
 class _YearlyChartViewState extends State<YearlyChartView> {
   final ChartDataService _chartService = ChartDataService();
+  final CategoryChartService _categoryService = CategoryChartService();
   int _selectedYear = DateTime.now().year;
   List<ChartDataPoint> _chartData = [];
   PeriodSummary? _summary;
@@ -471,55 +568,85 @@ class _YearlyChartViewState extends State<YearlyChartView> {
     });
   }
 
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: const Icon(Icons.chevron_left),
-                onPressed: () {
-                  setState(() {
-                    _selectedYear--;
-                  });
-                  _loadData();
-                },
-              ),
-              Text(
-                _selectedYear.toString(),
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w500,
-                ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.chevron_right),
-                onPressed: _selectedYear < DateTime.now().year
-                    ? () {
-                        setState(() {
-                          _selectedYear++;
-                        });
-                        _loadData();
-                      }
-                    : null,
-              ),
-            ],
+  void _showCategoryBreakdown() async {
+    final startOfYear = DateTime(_selectedYear, 1, 1);
+    final endOfYear = DateTime(_selectedYear, 12, 31, 23, 59, 59);
+    
+    final breakdown = await _categoryService.getCategoryBreakdown(startOfYear, endOfYear);
+    
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 500,
+            ),
+            child: CategoryPieChart(breakdown: breakdown),
           ),
         ),
-        if (_summary != null) _buildSummaryCards(),
-        if (_summary != null) const SizedBox(height: 8),
-        if (_summary != null) IncomePieChart(summary: _summary!),
-        if (_summary != null) const Divider(height: 32),
-        Expanded(
-          child: _isLoading
-              ? const Center(child: CircularProgressIndicator())
-              : PeriodChart(data: _chartData, period: 'yearly'),
-        ),
-      ],
+      );
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      body: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: const Icon(Icons.chevron_left),
+                  onPressed: () {
+                    setState(() {
+                      _selectedYear--;
+                    });
+                    _loadData();
+                  },
+                ),
+                Text(
+                  _selectedYear.toString(),
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.chevron_right),
+                  onPressed: _selectedYear < DateTime.now().year
+                      ? () {
+                          setState(() {
+                            _selectedYear++;
+                          });
+                          _loadData();
+                        }
+                      : null,
+                ),
+              ],
+            ),
+          ),
+          if (_summary != null) _buildSummaryCards(),
+          const SizedBox(height: 16),
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : PeriodChart(data: _chartData, period: 'yearly'),
+          ),
+        ],
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: _showCategoryBreakdown,
+        tooltip: 'ดูสัดส่วนตามหมวดหมู่',
+        child: const Icon(Icons.pie_chart),
+      ),
     );
   }
 

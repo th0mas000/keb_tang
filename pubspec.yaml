@@ -51,6 +51,16 @@ dependencies:
   google_mlkit_text_recognition: ^0.13.0
   image_picker: ^1.0.7
   permission_handler: ^11.3.1
+  
+  # Export/Import
+  file_picker: ^8.1.4
+  path_provider: ^2.1.5
+  share_plus: ^10.1.2
+  
+  # Google Drive Integration
+  googleapis: ^13.2.0
+  googleapis_auth: ^1.6.0
+  url_launcher: ^6.3.1
 
 dev_dependencies:
   flutter_test:
