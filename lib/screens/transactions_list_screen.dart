@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import '../models/transaction.dart';
 import '../models/transaction_type.dart';
 import '../database/database_helper.dart';
 import '../widgets/transaction_card.dart';
+import '../utils/currency_formatter.dart';
 import 'add_transaction_screen.dart';
 
 class TransactionsListScreen extends StatefulWidget {
@@ -16,6 +18,10 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
   List<Transaction> _transactions = [];
   TransactionType? _filterType; // null means show all
   bool _isLoading = true;
+  
+  // Grouped data: Map<DateString, List<Transaction>>
+  final Map<String, List<Transaction>> _groupedTransactions = {};
+  final Map<String, Map<String, double>> _dailyTotals = {}; // Date -> {income, expense}
 
   @override
   void initState() {
@@ -29,6 +35,9 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
       final transactions = _filterType == null
           ? await DatabaseHelper.instance.readAllTransactions()
           : await DatabaseHelper.instance.readTransactionsByType(_filterType!);
+      
+      _groupTransactions(transactions);
+      
       setState(() {
         _transactions = transactions;
         _isLoading = false;
@@ -39,6 +48,29 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text('เกิดข้อผิดพลาดในการโหลดรายการ: $e')),
         );
+      }
+    }
+  }
+
+  void _groupTransactions(List<Transaction> transactions) {
+    _groupedTransactions.clear();
+    _dailyTotals.clear();
+    
+    // Convert to map for grouping
+    for (var transaction in transactions) {
+      final dateKey = DateFormat('yyyy-MM-dd').format(transaction.date);
+      
+      if (!_groupedTransactions.containsKey(dateKey)) {
+        _groupedTransactions[dateKey] = [];
+        _dailyTotals[dateKey] = {'income': 0.0, 'expense': 0.0};
+      }
+      
+      _groupedTransactions[dateKey]!.add(transaction);
+      
+      if (transaction.type == TransactionType.income) {
+        _dailyTotals[dateKey]!['income'] = _dailyTotals[dateKey]!['income']! + transaction.amount;
+      } else {
+        _dailyTotals[dateKey]!['expense'] = _dailyTotals[dateKey]!['expense']! + transaction.amount;
       }
     }
   }
@@ -73,12 +105,33 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
     }
   }
 
+  String _formatDateHeader(String dateKey) {
+    final date = DateTime.parse(dateKey);
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final checkDate = DateTime(date.year, date.month, date.day);
+
+    if (checkDate == today) {
+      return 'วันนี้'; // Today
+    } else if (checkDate == yesterday) {
+      return 'เมื่อวาน'; // Yesterday
+    } else {
+      return DateFormat('dd MMM yyyy').format(date);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Get sorted keys (newest first)
+    final sortedKeys = _groupedTransactions.keys.toList()
+      ..sort((a, b) => b.compareTo(a));
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('รายการทั้งหมด'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        scrolledUnderElevation: 0,
         actions: [
           PopupMenuButton<TransactionType?>(
             icon: const Icon(Icons.filter_list),
@@ -123,6 +176,7 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
           ),
         ],
       ),
+      backgroundColor: Colors.grey[50],
       body: _isLoading
           ? const Center(child: CircularProgressIndicator())
           : _transactions.isEmpty
@@ -145,14 +199,68 @@ class _TransactionsListScreenState extends State<TransactionsListScreen> {
               : RefreshIndicator(
                   onRefresh: _loadTransactions,
                   child: ListView.builder(
-                    itemCount: _transactions.length,
-                    padding: const EdgeInsets.symmetric(vertical: 8),
+                    padding: const EdgeInsets.only(bottom: 24),
+                    itemCount: sortedKeys.length,
                     itemBuilder: (context, index) {
-                      final transaction = _transactions[index];
-                      return TransactionCard(
-                        transaction: transaction,
-                        onTap: () => _editTransaction(transaction),
-                        onDelete: () => _deleteTransaction(transaction.id!),
+                      final dateKey = sortedKeys[index];
+                      final dailyTransactions = _groupedTransactions[dateKey]!;
+                      final totals = _dailyTotals[dateKey]!;
+                      
+                      return Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          // Date Header
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  _formatDateHeader(dateKey),
+                                  style: const TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.black87,
+                                  ),
+                                ),
+                                Row(
+                                  children: [
+                                    if (totals['income']! > 0)
+                                      Text(
+                                        '+${CurrencyFormatter.formatTHB(totals['income']!)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.green,
+                                        ),
+                                      ),
+                                    if (totals['income']! > 0 && totals['expense']! > 0)
+                                      const SizedBox(width: 8),
+                                    if (totals['expense']! > 0)
+                                      Text(
+                                        '-${CurrencyFormatter.formatTHB(totals['expense']!)}',
+                                        style: const TextStyle(
+                                          fontSize: 13,
+                                          fontWeight: FontWeight.w600,
+                                          color: Colors.red,
+                                        ),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                          
+                          // Transactions
+                          ...dailyTransactions.map((transaction) {
+                            return TransactionCard(
+                              transaction: transaction,
+                              showDate: false, // Already grouped by date
+                              onTap: () => _editTransaction(transaction),
+                              onDelete: () => _deleteTransaction(transaction.id!),
+                            );
+                          }),
+                        ],
                       );
                     },
                   ),
