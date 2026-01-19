@@ -44,8 +44,10 @@ class PeriodChart extends StatelessWidget {
               tooltipMargin: 8,
               getTooltipItem: (group, groupIndex, rod, rodIndex) {
                 final dataPoint = data[groupIndex];
-                final isIncome = rodIndex == 0;
+                // rodIndex in stacked bars refers to stack items: 0=expense, 1=income
+                final isIncome = rodIndex == 1;
                 final amount = isIncome ? dataPoint.income : dataPoint.expense;
+                final total = dataPoint.income + dataPoint.expense;
                 return BarTooltipItem(
                   '${isIncome ? 'รายรับ' : 'รายจ่าย'}\n',
                   const TextStyle(
@@ -60,6 +62,14 @@ class PeriodChart extends StatelessWidget {
                         color: Colors.white,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
+                      ),
+                    ),
+                    TextSpan(
+                      text: '\nรวม: ${CurrencyFormatter.formatTHB(total)}',
+                      style: const TextStyle(
+                        color: Colors.white70,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
                       ),
                     ),
                   ],
@@ -140,22 +150,21 @@ class PeriodChart extends StatelessWidget {
         x: index,
         barRods: [
           BarChartRodData(
-            toY: dataPoint.income,
-            color: Colors.green,
+            toY: dataPoint.expense + dataPoint.income,
+            color: Colors.green, // This will be overridden by rodStackItems
             width: _getBarWidth(),
             borderRadius: const BorderRadius.only(
               topLeft: Radius.circular(4),
               topRight: Radius.circular(4),
             ),
-          ),
-          BarChartRodData(
-            toY: dataPoint.expense,
-            color: Colors.red,
-            width: _getBarWidth(),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(4),
-              topRight: Radius.circular(4),
-            ),
+            rodStackItems: [
+              BarChartRodStackItem(0, dataPoint.expense, Colors.red),
+              BarChartRodStackItem(
+                dataPoint.expense,
+                dataPoint.expense + dataPoint.income,
+                Colors.green,
+              ),
+            ],
           ),
         ],
       );
@@ -165,8 +174,8 @@ class PeriodChart extends StatelessWidget {
   double _getMaxY() {
     double max = 0;
     for (var point in data) {
-      if (point.income > max) max = point.income;
-      if (point.expense > max) max = point.expense;
+      final total = point.income + point.expense;
+      if (total > max) max = total;
     }
     // Add 20% padding to max value, ensure minimum of 1 to avoid zero interval
     return max > 0 ? max * 1.2 : 1;
