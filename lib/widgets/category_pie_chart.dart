@@ -5,10 +5,12 @@ import '../utils/currency_formatter.dart';
 
 class CategoryPieChart extends StatefulWidget {
   final CategoryBreakdown breakdown;
+  final String chartType; // 'income', 'expense', or 'all'
 
   const CategoryPieChart({
     super.key,
     required this.breakdown,
+    this.chartType = 'all',
   });
 
   @override
@@ -49,6 +51,10 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
       );
     }
 
+    String title = 'สัดส่วนตามหมวดหมู่';
+    if (widget.chartType == 'income') title = 'สัดส่วนรายรับ';
+    if (widget.chartType == 'expense') title = 'สัดส่วนรายจ่าย';
+
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
@@ -84,10 +90,10 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
                 ),
               ),
               const SizedBox(width: 12),
-              const Expanded(
+              Expanded(
                 child: Text(
-                  'สัดส่วนตามหมวดหมู่',
-                  style: TextStyle(
+                  title,
+                  style: const TextStyle(
                     fontSize: 20,
                     fontWeight: FontWeight.bold,
                     color: Colors.white,
@@ -114,23 +120,27 @@ class _CategoryPieChartState extends State<CategoryPieChart> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Income pie chart
-                if (widget.breakdown.hasIncomeData) ...[
-                  _buildSectionTitle('รายรับ', Colors.green),
-                  const SizedBox(height: 20),
+                if ((widget.chartType == 'all' || widget.chartType == 'income') && widget.breakdown.hasIncomeData) ...[
+                  if (widget.chartType == 'all') ...[
+                    _buildSectionTitle('รายรับ', Colors.green),
+                    const SizedBox(height: 20),
+                  ],
                   _buildPieChartSection(
                     widget.breakdown.incomeCategories,
                     widget.breakdown.totalIncome,
                     _getIncomeColors(),
                     isIncome: true,
                   ),
-                  if (widget.breakdown.hasExpenseData)
+                  if (widget.chartType == 'all' && widget.breakdown.hasExpenseData)
                     const SizedBox(height: 32),
                 ],
 
                 // Expense pie chart
-                if (widget.breakdown.hasExpenseData) ...[
-                  _buildSectionTitle('รายจ่าย', Colors.red),
-                  const SizedBox(height: 20),
+                if ((widget.chartType == 'all' || widget.chartType == 'expense') && widget.breakdown.hasExpenseData) ...[
+                  if (widget.chartType == 'all') ...[
+                    _buildSectionTitle('รายจ่าย', Colors.red),
+                    const SizedBox(height: 20),
+                  ],
                   _buildPieChartSection(
                     widget.breakdown.expenseCategories,
                     widget.breakdown.totalExpense,

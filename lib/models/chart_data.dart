@@ -43,5 +43,5 @@ class PeriodSummary {
 
   double get net => totalIncome - totalExpense;
   
-  String get netLabel => net >= 0 ? 'Profit' : 'Loss';
+  String get netLabel => net >= 0 ? 'กำไร' : 'ขาดทุน';
 }

@@ -10,63 +10,240 @@ import '../widgets/category_pie_chart.dart';
 import '../utils/currency_formatter.dart';
 import '../widgets/responsive_container.dart';
 
-class StatisticsScreen extends StatelessWidget {
+class StatisticsScreen extends StatefulWidget {
   const StatisticsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    return DefaultTabController(
-      length: 3,
-      child: Scaffold(
-        backgroundColor: Colors.grey.shade50,
-        appBar: AppBar(
-          title: const Text(
-            'สถิติ',
-            style: TextStyle(fontWeight: FontWeight.bold),
+  State<StatisticsScreen> createState() => _StatisticsScreenState();
+}
+
+class _StatisticsScreenState extends State<StatisticsScreen> with SingleTickerProviderStateMixin {
+  late TabController _tabController;
+  final CategoryChartService _categoryService = CategoryChartService();
+  
+  // GlobalKeys to access child widget states
+  final GlobalKey<_WeeklyChartViewState> _weeklyKey = GlobalKey<_WeeklyChartViewState>();
+  final GlobalKey<_MonthlyChartViewState> _monthlyKey = GlobalKey<_MonthlyChartViewState>();
+  final GlobalKey<_YearlyChartViewState> _yearlyKey = GlobalKey<_YearlyChartViewState>();
+
+  @override
+  void initState() {
+    super.initState();
+    _tabController = TabController(length: 3, vsync: this);
+    _tabController.addListener(() {
+      setState(() {}); // Rebuild to update button label
+    });
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _showCategoryBreakdown() async {
+    DateTime startDate;
+    DateTime endDate;
+
+    // Determine date range based on active tab and selected dates
+    switch (_tabController.index) {
+      case 0: // Weekly
+        final weeklyState = _weeklyKey.currentState;
+        if (weeklyState == null) return;
+        final weekStart = weeklyState._selectedWeekStart;
+        startDate = DateTime(weekStart.year, weekStart.month, weekStart.day);
+        endDate = startDate.add(const Duration(days: 6, hours: 23, minutes: 59, seconds: 59));
+        break;
+      case 1: // Monthly
+        final monthlyState = _monthlyKey.currentState;
+        if (monthlyState == null) return;
+        final selectedMonth = monthlyState._selectedMonth;
+        startDate = DateTime(selectedMonth.year, selectedMonth.month, 1);
+        endDate = DateTime(selectedMonth.year, selectedMonth.month + 1, 0, 23, 59, 59);
+        break;
+      case 2: // Yearly
+        final yearlyState = _yearlyKey.currentState;
+        if (yearlyState == null) return;
+        final selectedYear = yearlyState._selectedYear;
+        startDate = DateTime(selectedYear, 1, 1);
+        endDate = DateTime(selectedYear, 12, 31, 23, 59, 59);
+        break;
+      default:
+        return;
+    }
+
+    // Show selection sheet
+    final String? selectedType = await showModalBottomSheet<String>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (BuildContext context) {
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.only(
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+            ),
           ),
-          centerTitle: true,
-          elevation: 0,
-          flexibleSpace: Container(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF64748B),
-                  const Color(0xFF64748B),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                margin: const EdgeInsets.symmetric(vertical: 12),
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade300,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-            ),
-          ),
-          foregroundColor: Colors.white,
-          bottom: TabBar(
-            isScrollable: false,
-            indicatorColor: Colors.white,
-            indicatorWeight: 3,
-            labelColor: Colors.white,
-            unselectedLabelColor: Colors.white70,
-            labelStyle: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 14,
-            ),
-            unselectedLabelStyle: const TextStyle(
-              fontWeight: FontWeight.normal,
-              fontSize: 14,
-            ),
-            tabs: const [
-              Tab(text: 'รายสัปดาห์'),
-              Tab(text: 'รายเดือน'),
-              Tab(text: 'รายปี'),
+              const Padding(
+                padding: EdgeInsets.only(bottom: 20),
+                child: Text(
+                  'เลือกประเภท',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.green.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.arrow_upward_rounded, color: Colors.green),
+                ),
+                title: const Text('รายรับ', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () => Navigator.pop(context, 'income'),
+              ),
+              ListTile(
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: Colors.red.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.arrow_downward_rounded, color: Colors.red),
+                ),
+                title: const Text('รายจ่าย', style: TextStyle(fontWeight: FontWeight.bold)),
+                onTap: () => Navigator.pop(context, 'expense'),
+              ),
+              const SizedBox(height: 20),
             ],
           ),
+        );
+      },
+    );
+
+    if (selectedType == null) return;
+
+    final breakdown = await _categoryService.getCategoryBreakdown(startDate, endDate);
+
+    if (mounted) {
+      showDialog(
+        context: context,
+        builder: (context) => Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(20),
+          ),
+          child: Container(
+            constraints: const BoxConstraints(
+              maxHeight: 600,
+              maxWidth: 500,
+            ),
+            child: CategoryPieChart(
+              breakdown: breakdown,
+              chartType: selectedType,
+            ),
+          ),
         ),
-        body: const TabBarView(
-          children: [
-            WeeklyChartView(),
-            MonthlyChartView(),
-            YearlyChartView(),
+      );
+    }
+  }
+
+  DateTime _getWeekStart(DateTime date) {
+    return date.subtract(Duration(days: date.weekday - 1));
+  }
+
+  String _getButtonLabel() {
+    switch (_tabController.index) {
+      case 0:
+        return 'สรุปสัดส่วนรายสัปดาห์';
+      case 1:
+        return 'สรุปสัดส่วนรายเดือน';
+      case 2:
+        return 'สรุปสัดส่วนรายปี';
+      default:
+        return 'ดูสัดส่วน';
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.grey.shade50,
+      appBar: AppBar(
+        title: const Text(
+          'สถิติ',
+          style: TextStyle(fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+        elevation: 0,
+        flexibleSpace: Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              colors: [
+                const Color(0xFF64748B),
+                const Color(0xFF64748B),
+              ],
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+            ),
+          ),
+        ),
+        foregroundColor: Colors.white,
+        actions: [
+          TextButton.icon(
+            icon: const Icon(Icons.pie_chart_rounded),
+            label: Text(_getButtonLabel()),
+            onPressed: _showCategoryBreakdown,
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+            ),
+          )
+        ],
+        bottom: TabBar(
+          controller: _tabController,
+          isScrollable: false,
+          indicatorColor: Colors.white,
+          indicatorWeight: 3,
+          labelColor: Colors.white,
+          unselectedLabelColor: Colors.white70,
+          labelStyle: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+          ),
+          unselectedLabelStyle: const TextStyle(
+            fontWeight: FontWeight.normal,
+            fontSize: 14,
+          ),
+          tabs: const [
+            Tab(text: 'รายสัปดาห์'),
+            Tab(text: 'รายเดือน'),
+            Tab(text: 'รายปี'),
           ],
         ),
+      ),
+      body: TabBarView(
+        controller: _tabController,
+        children: [
+          WeeklyChartView(key: _weeklyKey),
+          MonthlyChartView(key: _monthlyKey),
+          YearlyChartView(key: _yearlyKey),
+        ],
       ),
     );
   }
@@ -197,12 +374,16 @@ class _DailyChartViewState extends State<DailyChartView> {
             ),
           ],
         ),
-        child: FloatingActionButton(
+        child: FloatingActionButton.extended(
           onPressed: _showCategoryBreakdown,
           tooltip: 'ดูสัดส่วนตามหมวดหมู่',
           backgroundColor: Colors.transparent,
           elevation: 0,
-          child: const Icon(Icons.pie_chart_rounded, size: 28),
+          icon: const Icon(Icons.pie_chart_rounded, size: 28),
+          label: const Text(
+    "สรุป", 
+    style: TextStyle(color: Colors.black), // Ensure text is visible
+  )
         ),
       ),
     );
@@ -436,31 +617,6 @@ class _WeeklyChartViewState extends State<WeeklyChartView> {
           ],
         ),
       ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF64748B),
-              const Color(0xFF64748B),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.teal.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showCategoryBreakdown,
-          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.pie_chart_rounded, size: 28),
-        ),
-      ),
     );
   }
 
@@ -661,31 +817,6 @@ class _MonthlyChartViewState extends State<MonthlyChartView> {
                   : PeriodChart(data: _chartData, period: 'monthly'),
             ),
           ],
-        ),
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF64748B),
-              const Color(0xFF64748B),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.teal.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showCategoryBreakdown,
-          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.pie_chart_rounded, size: 28),
         ),
       ),
     );
@@ -896,31 +1027,6 @@ class _YearlyChartViewState extends State<YearlyChartView> {
                   : PeriodChart(data: _chartData, period: 'yearly'),
             ),
           ],
-        ),
-      ),
-      floatingActionButton: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [
-              const Color(0xFF64748B),
-              const Color(0xFF64748B),
-            ],
-          ),
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.teal.withOpacity(0.4),
-              blurRadius: 8,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: FloatingActionButton(
-          onPressed: _showCategoryBreakdown,
-          tooltip: 'ดูสัดส่วนตามหมวดหมู่',
-          backgroundColor: Colors.transparent,
-          elevation: 0,
-          child: const Icon(Icons.pie_chart_rounded, size: 28),
         ),
       ),
     );
