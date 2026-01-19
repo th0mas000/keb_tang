@@ -24,7 +24,7 @@ Keb Tang (เก็บตังค์) คือแอปพลิเคชั�
 
 | หน้าหลัก (Home) | เพิ่มรายการ (Add Transaction) |
 |:-----------:|:---------------:|
-| ![Home](screenshot/kebTang_sc_home.jpeg) | ![Add Transaction](screenshot/kebTang_sc_add_transaction.jpeg) |
+| <img src="screenshot/kebTang_sc_home.jpeg" width="250" /> | <img src="screenshot/kebTang_sc_add_transaction.jpeg" width="250" /> |
 
 ## 🔑 การขออนุญาตเข้าถึง (Permissions)
 
