@@ -71,7 +71,7 @@ class ChartDataService {
       final day = startOfWeek.add(Duration(days: i));
       final key = DateFormat('yyyy-MM-dd').format(day);
       dailyData[key] = ChartDataPoint(
-        label: DateFormat('EEE').format(day),
+        label: DateFormat('EEE', 'th_TH').format(day),
         income: 0,
         expense: 0,
         date: day,
@@ -172,7 +172,7 @@ class ChartDataService {
     for (int i = 1; i <= 12; i++) {
       final monthDate = DateTime(year, i, 1);
       monthlyData[i] = ChartDataPoint(
-        label: DateFormat('MMM').format(monthDate),
+        label: DateFormat('MMM', 'th_TH').format(monthDate),
         income: 0,
         expense: 0,
         date: monthDate,

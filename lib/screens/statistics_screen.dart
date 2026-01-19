@@ -16,7 +16,7 @@ class StatisticsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return DefaultTabController(
-      length: 4,
+      length: 3,
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
         appBar: AppBar(
@@ -54,7 +54,6 @@ class StatisticsScreen extends StatelessWidget {
               fontSize: 14,
             ),
             tabs: const [
-              Tab(text: 'รายวัน'),
               Tab(text: 'รายสัปดาห์'),
               Tab(text: 'รายเดือน'),
               Tab(text: 'รายปี'),
@@ -63,7 +62,6 @@ class StatisticsScreen extends StatelessWidget {
         ),
         body: const TabBarView(
           children: [
-            DailyChartView(),
             WeeklyChartView(),
             MonthlyChartView(),
             YearlyChartView(),
